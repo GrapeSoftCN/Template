@@ -75,14 +75,14 @@ public class TempList {
      * @return
      */
     public String TempListUpdate(String tid, String tempinfo) {
-        Object code = 99;
+        boolean code = false;
         String result = rMsg.netMSG(100, "更改模版方案失败");
         if (StringHelper.InvaildString(tempinfo)) {
             return rMsg.netMSG(1, "参数错误");
         }
         JSONObject obj = JSONObject.toJSON(tempinfo);
         code = temp.eq("_id", tid).data(obj).updateEx();
-        return code != null ? rMsg.netMSG(0, "更改模版方案成功") : result;
+        return result = code ? rMsg.netMSG(0, "更改模版方案成功") : result;
     }
 
     /**

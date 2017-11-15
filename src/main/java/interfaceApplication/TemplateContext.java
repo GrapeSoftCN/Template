@@ -88,7 +88,7 @@ public class TemplateContext {
      * @return
      */
     public String TempUpdate(String tempid, String tempinfo) {
-        Object code = 99;
+        boolean code = false;
         String result = rMsg.netMSG(100, "模版更新失败");
         if (!StringHelper.InvaildString(tempinfo)) {
             return rMsg.netMSG(1, "参数错误");
@@ -97,7 +97,7 @@ public class TemplateContext {
         if (object != null && object.size() > 0) {
             code = tempContext.eq("_id", tempid).data(object).updateEx();
         }
-        return code != null ? rMsg.netMSG(0, "模版更新成功") : result;
+        return result = code ? rMsg.netMSG(0, "模版更新成功") : result;
     }
 
     /**
