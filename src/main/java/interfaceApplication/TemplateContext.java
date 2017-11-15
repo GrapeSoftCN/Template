@@ -6,6 +6,7 @@ import org.json.simple.JSONObject;
 import JGrapeSystem.rMsg;
 import Model.CommonModel;
 import apps.appsProxy;
+import authority.plvDef.plvType;
 import interfaceModel.GrapeDBSpecField;
 import interfaceModel.GrapeTreeDBModel;
 import string.StringHelper;
@@ -14,7 +15,8 @@ public class TemplateContext {
     private GrapeTreeDBModel tempContext;
     private GrapeDBSpecField gDbSpecField;
     private CommonModel model;
-
+    private Integer userType = null;
+    
     public TemplateContext() {
         model = new CommonModel();
         tempContext = new GrapeTreeDBModel();
@@ -22,6 +24,7 @@ public class TemplateContext {
         gDbSpecField.importDescription(appsProxy.tableConfig("TemplateContext"));
         tempContext.descriptionModel(gDbSpecField);
         tempContext.bindApp();
+        tempContext.enableCheck();//开启权限检查
 
     }
 
@@ -34,12 +37,18 @@ public class TemplateContext {
     public String TempInsert(String tempinfo) {
         Object info = null;
         String result = rMsg.netMSG(100, "新增模版失败");
-        if (StringHelper.InvaildString(tempinfo)) {
+        if (!StringHelper.InvaildString(tempinfo)) {
             return rMsg.netMSG(1, "参数错误");
         }
         JSONObject object = JSONObject.toJSON(tempinfo);
+        JSONObject rMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 100);//设置默认查询权限
+    	JSONObject uMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 200);
+    	JSONObject dMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 300);
+    	object.put("rMode", rMode.toJSONString()); //添加默认查看权限
+    	object.put("uMode", uMode.toJSONString()); //添加默认修改权限
+    	object.put("dMode", dMode.toJSONString()); //添加默认删除权限
         if (object != null && object.size() > 0) {
-            info = tempContext.data(object).insertOnce();
+            info = tempContext.data(object).insertEx();
         }
         return info != null ? rMsg.netMSG(0, "新增模版成功") : result;
     }
@@ -58,7 +67,7 @@ public class TemplateContext {
         long code = 0;
         String[] value = null;
         String result = rMsg.netMSG(100, "删除失败");
-        if (!StringHelper.InvaildString(tempid)) {
+        if (StringHelper.InvaildString(tempid)) {
             value = tempid.split(",");
         }
         if (tempid != null) {
@@ -79,16 +88,16 @@ public class TemplateContext {
      * @return
      */
     public String TempUpdate(String tempid, String tempinfo) {
-        int code = 99;
+        Object code = 99;
         String result = rMsg.netMSG(100, "模版更新失败");
-        if (StringHelper.InvaildString(tempinfo)) {
+        if (!StringHelper.InvaildString(tempinfo)) {
             return rMsg.netMSG(1, "参数错误");
         }
         JSONObject object = JSONObject.toJSON(tempinfo);
         if (object != null && object.size() > 0) {
-            code = tempContext.eq("_id", tempid).data(object).update() != null ? 0 : 99;
+            code = tempContext.eq("_id", tempid).data(object).updateEx();
         }
-        return code == 0 ? rMsg.netMSG(0, "模版更新成功") : result;
+        return code != null ? rMsg.netMSG(0, "模版更新成功") : result;
     }
 
     /**
@@ -144,7 +153,7 @@ public class TemplateContext {
         String[] value = null;
         JSONArray array = null;
         JSONObject rObject = null, tempObj;
-        if (!StringHelper.InvaildString(tids)) {
+        if (StringHelper.InvaildString(tids)) {
             value = tids.split(",");
         }
         if (value != null) {

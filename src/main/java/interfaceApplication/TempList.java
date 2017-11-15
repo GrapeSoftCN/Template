@@ -6,6 +6,7 @@ import org.json.simple.JSONObject;
 import JGrapeSystem.rMsg;
 import Model.CommonModel;
 import apps.appsProxy;
+import authority.plvDef.plvType;
 import interfaceModel.GrapeDBSpecField;
 import interfaceModel.GrapeTreeDBModel;
 import session.session;
@@ -18,6 +19,7 @@ public class TempList {
     private session se;
     private JSONObject userInfo = null;
     private String currentWeb = null;
+    private Integer userType = null;
 
     public TempList() {
         model = new CommonModel();
@@ -26,11 +28,13 @@ public class TempList {
         gDbSpecField.importDescription(appsProxy.tableConfig("TempList"));
         temp.descriptionModel(gDbSpecField);
         temp.bindApp();
+        temp.enableCheck();//开启权限检查
 
         se = new session();
         userInfo = se.getDatas();
         if (userInfo != null && userInfo.size() != 0) {
             currentWeb = userInfo.getString("currentWeb"); // 当前站点id
+            userType =userInfo.getInt("userType");//当前用户身份
         }
     }
 
@@ -42,19 +46,25 @@ public class TempList {
      */
     @SuppressWarnings("unchecked")
     public String TempListInsert(String tempinfo) {
-        int code = 99;
+        Object code = 99;
         String result = rMsg.netMSG(100, "新增模版方案失败");
         if (StringHelper.InvaildString(tempinfo)) {
             return rMsg.netMSG(1, "参数错误");
         }
         JSONObject object = JSONObject.toJSON(tempinfo);
+        JSONObject rMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 100);//设置默认查询权限
+    	JSONObject uMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 200);
+    	JSONObject dMode = new JSONObject(plvType.chkType, plvType.powerVal).puts(plvType.chkVal, 300);
+    	object.put("rMode", rMode.toJSONString()); //添加默认查看权限
+    	object.put("uMode", uMode.toJSONString()); //添加默认修改权限
+    	object.put("dMode", dMode.toJSONString()); //添加默认删除权限
         if (object != null && object.size() > 0) {
             if (object.containsKey("wbid")) {
                 object.put("wbid", currentWeb);
             }
-            code = temp.dataEx(object).insertOnce() != null ? 0 : 99;
+            code = temp.dataEx(object).insertEx();
         }
-        return code == 0 ? rMsg.netMSG(0, "新增模版方案成功") : result;
+        return code != null ? rMsg.netMSG(0, "新增模版方案成功") : result;
     }
 
     /**
@@ -65,14 +75,14 @@ public class TempList {
      * @return
      */
     public String TempListUpdate(String tid, String tempinfo) {
-        int code = 99;
+        Object code = 99;
         String result = rMsg.netMSG(100, "更改模版方案失败");
         if (StringHelper.InvaildString(tempinfo)) {
             return rMsg.netMSG(1, "参数错误");
         }
         JSONObject obj = JSONObject.toJSON(tempinfo);
-        code = temp.eq("_id", tid).data(obj).update() != null ? 0 : 99;
-        return code == 0 ? rMsg.netMSG(0, "更改模版方案成功") : result;
+        code = temp.eq("_id", tid).data(obj).updateEx();
+        return code != null ? rMsg.netMSG(0, "更改模版方案成功") : result;
     }
 
     /**
